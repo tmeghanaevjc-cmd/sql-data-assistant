@@ -1,0 +1,59 @@
+{
+  "schema": 2,
+  "required_executas": [
+    {
+      "tool_id": "tool-meghana-ai-sql-data-assistant-r446nerg"
+    }
+  ],
+  "tags": [
+    "sql-data-assistant",
+    "csv"
+  ],
+  "ui": {
+    "bundle": {
+      "format": "static-spa",
+      "entry": "index.html",
+      "external_origins": []
+    },
+    "views": [
+      {
+        "name": "main",
+        "title": "sql-data-assistant",
+        "default": true,
+        "default_size": {
+          "w": 720,
+          "h": 640
+        },
+        "min_size": {
+          "w": 320,
+          "h": 240
+        }
+      }
+    ],
+    "host_api": {
+      "tools": [
+        "tool-meghana-ai-sql-data-assistant-r446nerg"
+      ],
+      "storage": [
+        "get",
+        "set"
+      ],
+      "llm": [
+        "complete"
+      ],
+      "window": [
+        "set_title",
+        "ready"
+      ]
+    },
+    "csp_overrides": {},
+    "state_merge": "last_writer_wins"
+  },
+  "dev": {
+    "fixtures": [
+      "fixtures/*.jsonl"
+    ],
+    "seed_storage": {},
+    "user_id": 1
+  }
+}

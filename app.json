@@ -1,0 +1,7 @@
+{
+  "slug": "sql-data-assistant",
+  "name": "SQL Data Assistant",
+  "tagline": "Ask your CSV questions in plain English",
+  "description": "Upload a CSV, ask a question in plain English, and get the answer with the SQL used and a result table.",
+  "category": "productivity"
+}

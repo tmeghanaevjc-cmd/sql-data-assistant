@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SQL Data Assistant</title>
+  <style>
+    :root {
+      --ink: #14232e;
+      --muted: #5b6b77;
+      --line: #d5dde3;
+      --panel: #f4f7f9;
+      --blue: #1f5fae;
+      --teal: #14998f;
+      --bad: #b3261e;
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px;
+      font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    h1 {
+      margin: 0 0 2px;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+    }
+
+    .sub {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    .drop {
+      display: block;
+      border: 1.5px dashed var(--line);
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--panel);
+    }
+
+    .drop.over,
+    .drop:focus-within {
+      border-color: var(--teal);
+      background: #eaf6f5;
+    }
+
+    .drop strong {
+      color: var(--blue);
+    }
+
+    .drop input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+    }
+
+    #file-info {
+      margin: 10px 0 0;
+      color: var(--muted);
+    }
+
+    #cols {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ask {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .ask input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      font: inherit;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    button {
+      font: inherit;
+      font-weight: 600;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .chips button {
+      font-weight: 400;
+      font-size: 13px;
+      padding: 4px 10px;
+      color: var(--blue);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+    }
+
+    #status {
+      margin-top: 14px;
+      min-height: 1.4em;
+      color: var(--muted);
+    }
+
+    #status.error {
+      color: var(--bad);
+    }
+
+    #result {
+      margin-top: 6px;
+    }
+
+    .answer {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 10px;
+    }
+
+    .sql-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 12px 0 4px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 10px 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow-x: auto;
+      font: 13px/1.5 Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 280px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>SQL Data Assistant</h1>
+  <p class="sub">Upload a CSV, ask a question in plain English, and see the answer with the SQL behind it.</p>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv" />
+    <span><strong>Choose a CSV file</strong> or drop it here</span>
+  </label>
+  <p id="file-info"></p>
+  <p id="cols"></p>
+
+  <div class="ask">
+    <input type="text" id="question" placeholder="e.g. Who has the highest marks?" aria-label="Your question"
+      disabled />
+    <button id="ask-btn" disabled>Ask</button>
+  </div>
+  <div class="chips" id="chips"></div>
+
+  <div id="status" role="status" aria-live="polite"></div>
+  <div id="result" hidden>
+    <p class="answer" id="answer"></p>
+    <div class="table-wrap" id="table-wrap" hidden></div>
+    <p class="sql-label">SQL used</p>
+    <pre id="sql"></pre>
+  </div>
+
+  <script src="./app.js" type="module"></script>
+</body>
+
+</html>
