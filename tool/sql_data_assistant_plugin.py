@@ -1,7 +1,8 @@
 """SQL Data Assistant - Anna Executa (stdio JSON-RPC plugin).
 
-Upload a CSV, ask a question in plain English, get the answer, the SQL used,
-and a result table. Uses only the Python standard library.
+Upload a CSV, ask a question in plain English. Anna's AI writes the SQL and this
+tool runs it safely (read-only) and returns the result table.
+Uses only the Python standard library.
 """
 
 import csv
@@ -10,6 +11,7 @@ import json
 import re
 import sqlite3
 import sys
+import time
 
 MAX_CSV_CHARS = 2_000_000
 MAX_ROWS_RETURNED = 200
@@ -17,10 +19,10 @@ MAX_ROWS_RETURNED = 200
 MANIFEST = {
     "name": "sql-data-assistant-tool",
     "display_name": "SQL Data Assistant Tool",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "description": (
-        "Loads a CSV, turns a plain-English question into SQL, runs it, and "
-        "returns the answer, the SQL and a result table."
+        "Loads a CSV, runs a read-only SQL query on it, and "
+        "returns the result table."
     ),
     "author": "meghana-ai",
     "license": "MIT",
@@ -64,6 +66,25 @@ MANIFEST = {
                     "name": "question",
                     "type": "string",
                     "description": "The question in plain English.",
+                    "required": True,
+                },
+            ],
+        },
+        {
+            "name": "run_sql",
+            "description": "Run one read-only SELECT query (written by the AI) on a CSV file and return the result table.",
+            "timeout": 60,
+            "parameters": [
+                {
+                    "name": "csv_text",
+                    "type": "string",
+                    "description": "The full text of the CSV file.",
+                    "required": True,
+                },
+                {
+                    "name": "sql",
+                    "type": "string",
+                    "description": "A single SQLite SELECT query on the table named data.",
                     "required": True,
                 },
             ],
@@ -148,6 +169,7 @@ def load_csv(csv_text):
 
 
 # ----------------------------------------------------- question understanding
+# (Old rule-based method, kept so the "ask" method still works.)
 def _words(text):
     return re.findall(r"[a-z0-9]+", text.lower())
 
@@ -303,7 +325,7 @@ def profile(csv_text):
     sample = conn.execute("SELECT * FROM data LIMIT 5").fetchall()
     return {
         "rows": n,
-        "columns": [{"name": display[c], "type": types[c]} for c in cols],
+        "columns": [{"name": display[c], "sql_name": c, "type": types[c]} for c in cols],
         "sample": {"columns": [display[c] for c in cols], "rows": [list(r) for r in sample]},
     }
 
@@ -333,6 +355,39 @@ def ask(csv_text, question):
     }
 
 
+def _make_read_only(conn):
+    """Allow only SELECT queries: block writes, schema changes and attaching files."""
+    allowed = {
+        sqlite3.SQLITE_SELECT,
+        sqlite3.SQLITE_READ,
+        sqlite3.SQLITE_FUNCTION,
+        getattr(sqlite3, "SQLITE_RECURSIVE", 33),
+    }
+
+    def authorizer(action, arg1, arg2, db_name, trigger):
+        return sqlite3.SQLITE_OK if action in allowed else sqlite3.SQLITE_DENY
+
+    conn.set_authorizer(authorizer)
+    deadline = time.time() + 20
+    conn.set_progress_handler(lambda: 1 if time.time() > deadline else 0, 100000)
+
+
+def run_sql(csv_text, sql):
+    if not isinstance(sql, str) or not sql.strip():
+        raise UserError("No SQL query was provided.")
+    sql = sql.strip().rstrip(";").strip()
+    if not re.match(r"(?is)^(select|with)\b", sql):
+        raise UserError("Only SELECT queries are allowed.")
+    conn, cols, display, types, n = load_csv(csv_text)
+    _make_read_only(conn)
+    cur = conn.execute(sql)
+    names = [d[0] for d in cur.description]
+    for c in cols:
+        names = [display[c] if x == c else x for x in names]
+    rows = [list(r) for r in cur.fetchmany(MAX_ROWS_RETURNED)]
+    return {"columns": names, "rows": rows, "total_rows_in_file": n}
+
+
 def invoke(method, args):
     # Tool methods MUST return {"success": True, "data": ...} or {"success": False, "error": "..."}
     try:
@@ -342,6 +397,8 @@ def invoke(method, args):
             return {"success": True, "data": profile(args.get("csv_text", ""))}
         if method == "ask":
             return {"success": True, "data": ask(args.get("csv_text", ""), args.get("question", ""))}
+        if method == "run_sql":
+            return {"success": True, "data": run_sql(args.get("csv_text", ""), args.get("sql", ""))}
         return {"success": False, "error": f"unknown method: {method}"}
     except UserError as e:
         return {"success": True, "data": {"error": str(e)}}
