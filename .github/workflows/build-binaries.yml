@@ -42,7 +42,7 @@ jobs:
           shutil.copy("dist/" + exe, "pkg/" + exe)
           manifest = {
               "name": "tool-meghana-ai-sql-data-assistant-r446nerg",
-              "version": "0.2.0",
+              "version": "0.3.0",
               "runtime": {"binary": {"entrypoint": exe}},
           }
           with open("pkg/manifest.json", "w") as f:
@@ -74,5 +74,5 @@ jobs:
       - run: sha256sum sql-data-assistant-plugin-*
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.2.0
+          tag_name: v0.3.0
           files: sql-data-assistant-plugin-*
